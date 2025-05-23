@@ -1,26 +1,90 @@
-{
-  "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./*"]
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Dead Rails Clone</title>
+  <style>
+    body { margin: 0; background: #111; overflow: hidden; }
+    canvas { display: block; margin: auto; background: #222; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const player = { x: 50, y: 320, width: 30, height: 60, color: "cyan" };
+    const bullets = [];
+    const zombies = [];
+
+    let lastZombieTime = 0;
+
+    function drawRect(obj) {
+      ctx.fillStyle = obj.color;
+      ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
     }
-  },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
-}
+
+    function shoot() {
+      bullets.push({ x: player.x + player.width, y: player.y + player.height / 2 - 5, width: 10, height: 5, speed: 6, color: "yellow" });
+    }
+
+    function spawnZombie() {
+      zombies.push({ x: 800, y: 320, width: 30, height: 60, speed: 1.5, color: "green" });
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") shoot();
+    });
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw player
+      drawRect(player);
+
+      // Update and draw bullets
+      bullets.forEach((b, i) => {
+        b.x += b.speed;
+        drawRect(b);
+        if (b.x > canvas.width) bullets.splice(i, 1);
+      });
+
+      // Spawn zombies every 2 seconds
+      if (Date.now() - lastZombieTime > 2000) {
+        spawnZombie();
+        lastZombieTime = Date.now();
+      }
+
+      // Update zombies
+      zombies.forEach((z, zi) => {
+        z.x -= z.speed;
+        drawRect(z);
+
+        // Check collision with bullets
+        bullets.forEach((b, bi) => {
+          if (b.x < z.x + z.width &&
+              b.x + b.width > z.x &&
+              b.y < z.y + z.height &&
+              b.y + b.height > z.y) {
+            zombies.splice(zi, 1);
+            bullets.splice(bi, 1);
+          }
+        });
+
+        // Check if zombie hits player
+        if (z.x < player.x + player.width) {
+          alert("Game Over!");
+          zombies.length = 0;
+          bullets.length = 0;
+          lastZombieTime = Date.now();
+        }
+      });
+
+      requestAnimationFrame(update);
+    }
+
+    update();
+  </script>
+</body>
+</html>
